@@ -1,55 +1,51 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 using UnityEditor;
 
 namespace Mayusaki3
 {
-    /// <Summary>
+    /// <summary>
     /// UIヘルパークラス: enum属性拡張
-    /// </Summary>
+    /// </summary>
+    /// <remarks>
+    /// - enum に StringValueAttribute を付与し、表示名をカスタマイズするためのヘルパー
+    /// - Editor 拡張からポップアップ選択を簡易に実装する用途で使用する
+    /// </remarks>
     public static partial class UIHelper
     {
         #region インナークラス
 
         #region 表示用の文字列を持つ属性(StringValueAttribute)
 
-        /// <Summary>
+        /// <summary>
         /// 表示用の文字列を持つ属性(StringValueAttribute)
-        /// </Summary>
+        /// </summary>
         /// <remarks>
-        /// 次のようにenum値に表示文字列を設定します。
-        /// 例. private enum MyEnum
-        ///     {
-        ///         [StringValue("表示文字列１")]
-        ///         enumvalue1
-        ///     }
+        /// 次のように enum 値に表示文字列を設定します。
+        ///
+        /// 例:
+        /// private enum MyEnum
+        /// {
+        ///     [StringValue("表示文字列１")]
+        ///     EnumValue1,
+        /// }
         /// </remarks>
         [AttributeUsage(AttributeTargets.Field)]
         public class StringValueAttribute : Attribute
         {
-            #region コンストラクタ
-
-            /// <Summary>
+            /// <summary>
             /// コンストラクタ
-            /// </Summary>
+            /// </summary>
             /// <param name="displayString">表示文字列</param>
             public StringValueAttribute(string displayString)
             {
                 DisplayString = displayString;
             }
 
-            #endregion
-
-            #region プロパティ
-
-            #region 表示文字列 ([R] DisplayString)
-
+            /// <summary>
+            /// 表示文字列
+            /// </summary>
             public string DisplayString { get; private set; }
-
-            #endregion
-    
-            #endregion
         }
 
         #endregion
@@ -60,40 +56,53 @@ namespace Mayusaki3
 
         #region enum値のStringValue属性から表示用文字列を取得 (GetEnumDisplayText<T>)
 
-        /// <Summary>
-        /// enum値のStringValue属性から表示用文字列を取得します。
-        /// </Summary>
-        /// <typeparam name="T">StringValue属性を設定したenum型</typeparam>
+        /// <summary>
+        /// enum値の StringValue 属性から表示用文字列を取得します。
+        /// </summary>
+        /// <typeparam name="T">StringValue 属性を設定した enum 型</typeparam>
         /// <param name="value">enum値</param>
-        /// <returns>enum値の表示用文字列</returns>
-        public static string GetEnumDisplayText<T>(T value)
+        /// <returns>enum値の表示用文字列（属性が無い場合は enum の ToString()）</returns>
+        public static string GetEnumDisplayText<T>(T value) where T : Enum
         {
-            var fieldInfo = value.GetType().GetField(value.ToString());
-            var stringValueAttribute = fieldInfo.GetCustomAttributes(typeof(StringValueAttribute), false) as StringValueAttribute[];
-            if (stringValueAttribute != null && stringValueAttribute.Length > 0)
+            var type = typeof(T);
+            var name = value.ToString();
+            var fieldInfo = type.GetField(name);
+            if (fieldInfo == null)
             {
-                return stringValueAttribute[0].DisplayString;
+                // 想定外だが、安全のため ToString() でフォールバック
+                return name;
             }
-            return value.ToString();
+
+            var stringValueAttributes =
+                (StringValueAttribute[])fieldInfo.GetCustomAttributes(typeof(StringValueAttribute), false);
+
+            if (stringValueAttributes != null && stringValueAttributes.Length > 0)
+            {
+                return stringValueAttributes[0].DisplayString;
+            }
+
+            return name;
         }
 
         #endregion
 
         #region enum値のStringValue属性から表示用文字列リストを取得 (GetEnumDisplayTexts<T>) [private]
 
-        /// <Summary>
-        /// enum値のStringValue属性から表示用文字列リストを取得します。
-        /// </Summary>
-        /// <typeparam name="T">StringValue属性を設定したenum型</typeparam>
+        /// <summary>
+        /// enum値の StringValue 属性から表示用文字列リストを取得します。
+        /// </summary>
+        /// <typeparam name="T">StringValue 属性を設定した enum 型</typeparam>
         /// <returns>enum値の表示用文字列リスト</returns>
-        private static string[] GetEnumDisplayTexts<T>()
+        private static string[] GetEnumDisplayTexts<T>() where T : Enum
         {
-            T[] values = (T[])System.Enum.GetValues(typeof(T));
-            string[] displayTexts = new string[values.Length];
+            var values = (T[])Enum.GetValues(typeof(T));
+            var displayTexts = new string[values.Length];
+
             for (int i = 0; i < values.Length; i++)
             {
                 displayTexts[i] = GetEnumDisplayText(values[i]);
             }
+
             return displayTexts;
         }
 
@@ -101,58 +110,62 @@ namespace Mayusaki3
 
         #region インデックス値に対応するenum値を取得 (GetEnumValueAtIndex<T>) [private]
 
-        /// <Summary>
-        /// enum値のStringValue属性から表示用文字列リストを取得します。
-        /// </Summary>
-        /// <typeparam name="T">StringValue属性を設定したenum型</typeparam>
+        /// <summary>
+        /// インデックス値に対応する enum 値を取得します。
+        /// </summary>
+        /// <typeparam name="T">StringValue 属性を設定した enum 型</typeparam>
         /// <param name="index">インデックス値</param>
-        /// <returns>対応するenum値</returns>
-        private static T GetEnumValueAtIndex<T>(int index)
+        /// <returns>対応する enum 値</returns>
+        private static T GetEnumValueAtIndex<T>(int index) where T : Enum
         {
-            return (T)System.Enum.GetValues(typeof(T)).GetValue(index);
+            return (T)Enum.GetValues(typeof(T)).GetValue(index);
         }
 
         #endregion
 
         #region enum値をポップアップして選択 (EnumPopup<T>)
 
-        /// <Summary>
-        /// enum値をポップアップして選択します。
-        /// </Summary>
-        /// <typeparam name="T">StringValue属性を設定したenum型</typeparam>
+        /// <summary>
+        /// enum値をポップアップで選択します。
+        /// </summary>
+        /// <typeparam name="T">StringValue 属性を設定した enum 型</typeparam>
         /// <param name="label">フィールドのラベル</param>
-        /// <param name="selected">現在選択されているenum値</param>
-        /// <returns>選択したenum値</returns>
-        public static T EnumPopup<T>(string label, T selected)
+        /// <param name="selected">現在選択されている enum 値</param>
+        /// <returns>選択された enum 値</returns>
+        public static T EnumPopup<T>(string label, T selected) where T : Enum
         {
-            string[] displayTexts = GetEnumDisplayTexts<T>();
-            int selectedIndex = EditorGUILayout.Popup(label, GetSelectedIndex(selected, displayTexts), displayTexts);
-            return GetEnumValueAtIndex<T>(selectedIndex);
+            var displayTexts = GetEnumDisplayTexts<T>();
+            int selectedIndex = GetSelectedIndex(selected, displayTexts);
+            int newIndex = EditorGUILayout.Popup(label, selectedIndex, displayTexts);
+            return GetEnumValueAtIndex<T>(newIndex);
         }
 
         #endregion
 
         #region 選択してenum値のインデックス値を取得 (GetSelectedIndex<T>) [private]
 
-        /// <Summary>
-        /// 選択してenum値のインデックス値を取得します。
-        /// </Summary>
-        /// <typeparam name="T">StringValue属性を設定したenum型</typeparam>
-        /// <param name="selected">選択したenum値</param>
+        /// <summary>
+        /// 選択された enum 値に対応するインデックス値を取得します。
+        /// </summary>
+        /// <typeparam name="T">StringValue 属性を設定した enum 型</typeparam>
+        /// <param name="selected">選択された enum 値</param>
         /// <param name="displayTexts">表示用文字列リスト</param>
         /// <returns>インデックス値</returns>
-        private static int GetSelectedIndex<T>(T selected, string[] displayTexts)
+        private static int GetSelectedIndex<T>(T selected, string[] displayTexts) where T : Enum
         {
+            var selectedText = GetEnumDisplayText(selected);
+
             for (int i = 0; i < displayTexts.Length; i++)
             {
-                if (GetEnumDisplayText(GetEnumValueAtIndex<T>(i)).Equals(GetEnumDisplayText(selected)))
+                if (displayTexts[i] == selectedText)
                 {
                     return i;
                 }
             }
+
             return 0;
         }
-        
+
         #endregion
 
         #endregion
