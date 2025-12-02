@@ -83,7 +83,7 @@ namespace Mayusaki3.PhysBoneTool
         /// <summary>
         /// メニューからウィンドウを開く
         /// </summary>
-        [MenuItem("Tools/Mayusaki3/PhysBone Tool")]
+        [MenuItem("Tools/Mayusaki3 Tools/PhysBone Tool")]
         private static void OpenWindow()
         {
             // 既存ウィンドウを取得または新規作成
