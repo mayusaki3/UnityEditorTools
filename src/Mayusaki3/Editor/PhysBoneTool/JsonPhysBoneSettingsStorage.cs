@@ -4,14 +4,11 @@
 // 役割:
 // - PhysBoneSettingsData を JSON ファイルとして保存・読み込みする Editor 用ストレージ実装。
 // - 保存先はプロジェクト内の任意ディレクトリ（例: Assets/Mayusaki3/PhysBoneTool/Presets）
-// 注意:
-// - Editor 専用のため、Editor フォルダ配下に配置する。
-// - UnityEditor.AssetDatabase を使用するため、#if UNITY_EDITOR ガードを付ける。
 
-using System;                         // 予備（今後の拡張用）
-using System.Collections.Generic;     // IReadOnlyList<T>
-using System.IO;                      // File/Directory
-using System.Text;                    // Encoding
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -20,32 +17,6 @@ using UnityEditor;
 
 namespace Mayusaki3.PhysBoneTool
 {
-    /// <summary>
-    /// PhysBone 設定の永続化インターフェース。
-    /// </summary>
-    public interface IPhysBoneSettingsStorage
-    {
-        /// <summary>
-        /// key をもとに設定データを保存する。
-        /// </summary>
-        void Save(string key, PhysBoneSettingsData data);
-
-        /// <summary>
-        /// key をもとに設定データを読み込む。
-        /// </summary>
-        bool TryLoad(string key, out PhysBoneSettingsData data);
-
-        /// <summary>
-        /// 保存済みの key 一覧を取得する。
-        /// </summary>
-        IReadOnlyList<string> ListKeys();
-
-        /// <summary>
-        /// 指定した key の設定データを削除する。
-        /// </summary>
-        bool Delete(string key);
-    }
-
     /// <summary>
     /// Assets 内のフォルダに JSON で保存する実装例。
     /// </summary>
@@ -76,13 +47,11 @@ namespace Mayusaki3.PhysBoneTool
             return Path.Combine(_rootDir, fileName);
         }
 
-        /// <inheritdoc/>
         public void Save(string key, PhysBoneSettingsData data)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key is null or empty", nameof(key));
 
-            // ディレクトリが無ければ作成
             var dir = _rootDir;
             if (!Directory.Exists(dir))
             {
@@ -90,18 +59,14 @@ namespace Mayusaki3.PhysBoneTool
             }
 
             var path = GetFilePath(key);
-
-            // JsonUtility でシリアライズ（Unity標準のJSON）
             var json = JsonUtility.ToJson(data, true);
             File.WriteAllText(path, json, Encoding.UTF8);
 
 #if UNITY_EDITOR
-            // プロジェクトビューに反映
             AssetDatabase.Refresh();
 #endif
         }
 
-        /// <inheritdoc/>
         public bool TryLoad(string key, out PhysBoneSettingsData data)
         {
             if (string.IsNullOrEmpty(key))
@@ -122,7 +87,6 @@ namespace Mayusaki3.PhysBoneTool
             return data != null;
         }
 
-        /// <inheritdoc/>
         public IReadOnlyList<string> ListKeys()
         {
             if (!Directory.Exists(_rootDir))
@@ -137,7 +101,6 @@ namespace Mayusaki3.PhysBoneTool
             foreach (var file in files)
             {
                 var name = Path.GetFileNameWithoutExtension(file);
-                // ".physbone" を拡張子直前に付けている場合は除去（上のGetFilePathと対応）
                 if (name.EndsWith(".physbone", StringComparison.Ordinal))
                 {
                     name = name.Substring(0, name.Length - ".physbone".Length);
@@ -148,7 +111,6 @@ namespace Mayusaki3.PhysBoneTool
             return keys;
         }
 
-        /// <inheritdoc/>
         public bool Delete(string key)
         {
             if (string.IsNullOrEmpty(key)) return false;

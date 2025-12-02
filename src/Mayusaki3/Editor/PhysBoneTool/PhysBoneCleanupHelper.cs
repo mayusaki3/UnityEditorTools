@@ -1,3 +1,4 @@
+using UnityEngine;
 namespace Mayusaki3.PhysBoneTool
 {
     public static class PhysBoneCleanupHelper

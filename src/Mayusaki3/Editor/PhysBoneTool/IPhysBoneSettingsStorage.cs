@@ -1,3 +1,7 @@
+// Assets/Mayusaki3/Editor/PhysBoneTool/IPhysBoneSettingsStorage.cs
+
+using System.Collections.Generic;
+
 namespace Mayusaki3.PhysBoneTool
 {
     /// <summary>
